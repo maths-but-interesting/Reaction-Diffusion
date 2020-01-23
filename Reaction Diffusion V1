@@ -1,0 +1,84 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+
+#DA=1.0, DB=.5, f=.055, k=.062
+
+def iterate(a_matrix_instance, b_matrix_instance):
+
+    a_diffusion_effect = a_diffusion_coefficient * get_diffusion_effect(a_matrix_instance)
+    b_diffusion_effect = b_diffusion_coefficient * get_diffusion_effect(b_matrix_instance)
+
+    concentration_effect = a_matrix_instance * b_matrix_instance * b_matrix_instance
+
+    growth_effect = feed_rate * (1 - a_matrix_instance)
+    decay_effect = (feed_rate + kill_rate) * b_matrix_instance
+
+    a_change = (a_diffusion_effect - concentration_effect + growth_effect)  * timestep
+    b_change = (b_diffusion_effect + concentration_effect - decay_effect)   * timestep
+
+    new_a_matrix = a_matrix_instance + a_change
+    new_b_matrix = b_matrix_instance + b_change
+
+    return new_a_matrix, new_b_matrix
+
+def get_diffusion_effect(matrix):
+    loss = -4 * matrix
+    right_shift = np.roll(matrix,  1, axis=0)
+    left_shift  = np.roll(matrix, -1, axis=0)
+    up_shift    = np.roll(matrix,  1, axis=1)
+    down_shift  = np.roll(matrix, -1, axis=1)
+
+    diffusion_change = loss + right_shift + left_shift + up_shift + down_shift
+
+    return diffusion_change
+
+a_diffusion_coefficient = 0.2
+b_diffusion_coefficient = 0.1
+kill_rate = 0.0586
+feed_rate = 0.015
+timestep = 1
+
+grid_size = 100
+centre = int(grid_size/2)
+shape = (grid_size, grid_size)
+
+number_of_iterations = 10000
+middle_box_size = 20
+noise_magnitude = 0.1
+
+#Set Inital Conditions
+a_matrix = np.ones(shape)
+b_matrix = np.zeros(shape)
+
+#Set A Middle Section
+box_radius = int(middle_box_size / 2)
+box_low = centre - box_radius
+box_high = centre + box_radius
+a_matrix[box_low:box_high, box_low:box_high] = 0.5
+b_matrix[box_low:box_high, box_low:box_high] = 0.4
+
+#Set A Middle Section
+box_radius = int(middle_box_size / 2)
+box_low = centre - box_radius - 40
+box_high = centre + box_radius - 40
+a_matrix[box_low:box_high, box_low:box_high] = 0.5
+b_matrix[box_low:box_high, box_low:box_high] = 0.25
+
+#Add Some Noise
+
+a_noise = np.random.uniform(-noise_magnitude, noise_magnitude, shape)
+b_noise = np.random.uniform(-noise_magnitude, noise_magnitude, shape)
+a_matrix += a_noise
+b_matrix += b_noise
+
+
+plt.ion()
+for x in range(number_of_iterations):
+    print(x)
+    a_matrix, b_matrix = iterate(a_matrix, b_matrix)
+
+    plt.imshow(a_matrix, cmap='terrain') # cmap='terrain',
+    plt.draw()
+    plt.pause(0.00001)
+    plt.clf()
